@@ -5,15 +5,20 @@ label-free map.
 
 ## Data format
 
-Each `*-states.tsv` (and similar) file has two **quoted, tab-separated** columns,
-no header:
+Datasets live in the [`datasets/`](datasets/) directory. Each `*.tsv` file there
+has two **quoted, tab-separated** columns, no header:
 
 ```
 "name"<TAB>"WKT geometry"
 ```
 
 The geometry is `POLYGON((...))` or `MULTIPOLYGON(((...)))` with coordinates in
-`lon lat` (WGS84) order.
+`lon lat` (WGS84) order. Each dataset's SPARQL query is the sibling `*.rq` file
+(endpoint <https://qlever.dev/api/osm-planet>).
+
+The picker is **not** hard-coded: `app.js` derives the list from the directory
+listing the static server returns for `datasets/`, so dropping a new `.tsv`
+in there makes it appear automatically.
 
 ## Run
 
@@ -38,4 +43,5 @@ Then open <http://localhost:8077/> (or `http://<host>:8077/`).
 
 - `index.html` — page + styles, loads Leaflet from the CDN.
 - `app.js` — map setup, a small self-contained WKT (POLYGON/MULTIPOLYGON) parser,
-  TSV loading, and the hover/click interactions.
+  dataset discovery, TSV loading, and the hover/click interactions.
+- `datasets/` — the `*.tsv` data files and their `*.rq` SPARQL queries.

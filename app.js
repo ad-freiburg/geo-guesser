@@ -1,14 +1,23 @@
 "use strict";
 
-// Datasets are TSV files in this directory: two quoted columns, no header:
-//   "name"<TAB>"WKT geometry (POLYGON or MULTIPOLYGON, coordinates lon lat)"
-const DATASETS = [
-  "germany-states.tsv",
-  "austria-states.tsv",
-  "switzerland-states.tsv",
-  "us-states.tsv",
-  "bayern-regbez.tsv",
-];
+// Datasets are TSV files in the `datasets/` directory: two quoted columns, no
+// header:  "name"<TAB>"WKT geometry (POLYGON or MULTIPOLYGON, coordinates lon lat)"
+//
+// The list is NOT hard-coded: it is derived at runtime from the directory
+// listing that the static file server returns for `datasets/`, so adding a new
+// .tsv there makes it show up in the picker with no change to this file.
+const DATASETS_DIR = "datasets/";
+
+// Fetch `datasets/` and pull the .tsv file names out of its autoindex HTML.
+async function listDatasets() {
+  const resp = await fetch(DATASETS_DIR);
+  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  const doc = new DOMParser().parseFromString(await resp.text(), "text/html");
+  const names = [...doc.querySelectorAll("a[href]")]
+    .map((a) => decodeURIComponent(a.getAttribute("href").split("/").pop()))
+    .filter((name) => name.endsWith(".tsv"));
+  return [...new Set(names)].sort();
+}
 
 const STYLE = { color: "#ffffff", weight: 1, fillColor: "#4a8fd6", fillOpacity: 0.65 };
 const HOVER = { color: "#ffffff", weight: 1.5, fillColor: "#e8743b", fillOpacity: 0.85 };
@@ -95,7 +104,7 @@ async function load(file) {
 
   let text;
   try {
-    const resp = await fetch(file);
+    const resp = await fetch(DATASETS_DIR + file);
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     text = await resp.text();
   } catch (e) {
@@ -127,17 +136,35 @@ async function load(file) {
 }
 
 // ---------------------------------------------------------------------------
-// Dataset picker (upper right). Default: germany-states.tsv, or ?file=...
+// Dataset picker (upper right). Options come from the datasets/ listing.
+// Default: germany-states.tsv if present, else the first one; ?file= overrides.
 // ---------------------------------------------------------------------------
 const picker = document.getElementById("picker");
-for (const d of DATASETS) {
-  const opt = document.createElement("option");
-  opt.value = d;
-  opt.textContent = d.replace(/\.tsv$/, "");
-  picker.appendChild(opt);
-}
-const requested = new URLSearchParams(location.search).get("file");
-picker.value = DATASETS.includes(requested) ? requested : "germany-states.tsv";
-picker.addEventListener("change", () => load(picker.value));
 
-load(picker.value);
+async function init() {
+  let datasets;
+  try {
+    datasets = await listDatasets();
+  } catch (e) {
+    info.textContent = "Could not list " + DATASETS_DIR + " (" + e.message + ")";
+    return;
+  }
+  if (!datasets.length) {
+    info.textContent = "No .tsv datasets found in " + DATASETS_DIR;
+    return;
+  }
+  for (const d of datasets) {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d.replace(/\.tsv$/, "");
+    picker.appendChild(opt);
+  }
+  const requested = new URLSearchParams(location.search).get("file");
+  picker.value = datasets.includes(requested)
+    ? requested
+    : datasets.includes("germany-states.tsv") ? "germany-states.tsv" : datasets[0];
+  picker.addEventListener("change", () => load(picker.value));
+  load(picker.value);
+}
+
+init();
