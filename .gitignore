@@ -1,0 +1,4 @@
+# Local http.server runtime files
+.port
+.server.pid
+.server.log

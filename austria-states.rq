@@ -1,0 +1,15 @@
+# Endpoint: https://qlever.dev/api/osm-planet
+PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+PREFIX ogc: <http://www.opengis.net/rdf#>
+PREFIX osm: <https://www.openstreetmap.org/>
+PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?name ?geometry WHERE {
+  osmrel:16239 ogc:sfCovers ?region .
+  ?region rdf:type osm:relation ;
+          osmkey:admin_level 4 ;
+          osmkey:boundary "administrative" ;
+          osmkey:name ?name ;
+          geo:hasGeometry/geo:asWKT ?geometry .
+}
